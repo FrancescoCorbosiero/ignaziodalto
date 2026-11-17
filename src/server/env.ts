@@ -17,6 +17,8 @@ export function parseEuroCents(v: string): number {
   return Math.round(n * 100);
 }
 
+const vatBasisPoints = Math.round(Math.min(100, Math.max(0, Number(str('VAT_RATE', '22').replace(',', '.')) || 0)) * 100);
+
 export const env = {
   /** scs-b2b catalog API (docs/10 of scs-b2b). Empty = use the fixture. */
   apiUrl: str('CATALOG_API_URL'),
@@ -25,7 +27,9 @@ export const env = {
   refreshSeconds: Math.max(60, int('CATALOG_REFRESH_SECONDS', 300)),
   /** Added to every size's scs-b2b list price. */
   markupCents: parseEuroCents(str('PRICE_MARKUP_EUR', '3.50')),
-  priceNote: str('PRICE_NOTE', 'Prezzi IVA esclusa'),
+  /** VAT added after the markup, in basis points: "22" -> 2200. 0 = net prices. */
+  vatBasisPoints: vatBasisPoints,
+  priceNote: str('PRICE_NOTE', vatBasisPoints > 0 ? 'Prezzi IVA inclusa' : 'Prezzi IVA esclusa'),
   dataDir: path.resolve(str('DATA_DIR', 'data')),
   newDays: Math.max(1, int('NEW_DAYS', 14)),
   /** At or below this many pairs a size is "ultimi pezzi". */

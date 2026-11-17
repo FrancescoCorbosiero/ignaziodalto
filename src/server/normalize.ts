@@ -45,11 +45,24 @@ export function assertCatalog(data: unknown): ApiCatalog {
   return c;
 }
 
-/** "75.00" + 350 -> 7850. Integer cents, never float sums. */
-export function priceCents(listPrice: string, markupCents: number): number {
+/** How this site prices a size: markup on the taxable amount, then VAT. */
+export interface Pricing {
+  /** Added to scs-b2b's net list price (the taxable amount), cents. */
+  markupCents: number;
+  /** VAT on top, in basis points (2200 = 22%); 0 = prices shown net. */
+  vatBasisPoints: number;
+}
+
+/**
+ * ("75.00", +350, 22%) -> (7500 + 350) x 1.22 = 9577 cents.
+ * The markup goes on the taxable amount; VAT is applied last, rounded to
+ * the cent (half up). Integer cents, never float sums.
+ */
+export function priceCents(listPrice: string, { markupCents, vatBasisPoints }: Pricing): number {
   const m = String(listPrice).trim().match(/^(\d+)(?:\.(\d{1,2}))?$/);
   if (!m) throw new Error(`Prezzo non valido: "${listPrice}"`);
-  return Number(m[1]) * 100 + Number((m[2] ?? '0').padEnd(2, '0')) + markupCents;
+  const taxable = Number(m[1]) * 100 + Number((m[2] ?? '0').padEnd(2, '0')) + markupCents;
+  return Math.floor((taxable * (10_000 + vatBasisPoints) + 5_000) / 10_000);
 }
 
 /** Stable key of the supplier image: changes when the feed changes the picture. */
@@ -59,7 +72,7 @@ export function imageKey(url: string): string {
 
 export function normalize(
   api: ApiCatalog,
-  markupCents: number,
+  pricing: Pricing,
   seen: Seen,
   newDays: number,
   now = new Date(),
@@ -78,7 +91,7 @@ export function normalize(
         eu: String(s.size_eu),
         us: String(s.size_us ?? ''),
         qty: Math.max(0, Math.trunc(Number(s.quantity) || 0)),
-        price: priceCents(s.price, markupCents),
+        price: priceCents(s.price, pricing),
       }))
       .sort((a, b) => bySize(a.eu, b.eu));
     if (sizes.length === 0) continue;

@@ -2,7 +2,8 @@
 
 Catalogo vetrina pubblico (senza login, senza carrello, senza admin) che
 mostra il listino di **scs-b2b** (`FrancescoCorbosiero/scs-b2b`,
-b2b.shoesclothingstore.com) **maggiorato di 3,50 € a taglia**. Il cliente
+b2b.shoesclothingstore.com) **maggiorato di 3,50 € a taglia sull'imponibile,
+IVA 22% inclusa**. Il cliente
 finale sceglie modello e taglia e invia la richiesta su WhatsApp (o e-mail).
 
 ## Da dove arrivano i dati
@@ -19,8 +20,10 @@ finale sceglie modello e taglia e invia la richiesta su WhatsApp (o e-mail).
 
 ## Regole
 
-1. **Prezzi**: netto scs-b2b + markup, in centesimi interi
-   (`src/server/normalize.ts`). Si mostrano con `PRICE_NOTE` ("IVA esclusa").
+1. **Prezzi**: `(netto scs-b2b + PRICE_MARKUP_EUR) × (1 + VAT_RATE)`: il
+   margine va sull'imponibile, l'IVA per ultima, arrotondata al centesimo, in
+   centesimi interi (`priceCents` in `src/server/normalize.ts`, testata).
+   Si mostrano IVA inclusa (`PRICE_NOTE`); `VAT_RATE=0` torna ai prezzi netti.
 2. **Noindex ovunque**: meta robots, `X-Robots-Tag` (middleware) e
    `robots.txt` con `Disallow: /`. Scelta del titolare.
 3. **Il fornitore non si vede**: le immagini passano da `/img/<sku>/<key>`

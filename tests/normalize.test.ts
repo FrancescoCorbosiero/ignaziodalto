@@ -15,21 +15,26 @@ const shoe = (sku: string, brand: string, sizes: [string, number, string][], ext
   ...extra,
 });
 
-test('the markup is added to every size, in integer cents', () => {
-  assert.equal(priceCents('75.00', 350), 7850);
-  assert.equal(priceCents('129.9', 350), 13340);
-  assert.equal(priceCents('0.10', 350), 360);
-  assert.throws(() => priceCents('abc', 350));
+const NET = { markupCents: 0, vatBasisPoints: 0 };
+
+test('the markup goes on the taxable amount, then VAT, in integer cents', () => {
+  const site = { markupCents: 350, vatBasisPoints: 2200 };
+  assert.equal(priceCents('75.00', site), 9577, '(75 + 3.50) x 1.22 = 95.77');
+  assert.equal(priceCents('100', site), 12627, '(100 + 3.50) x 1.22 = 126.27');
+  assert.equal(priceCents('0.10', site), 439, '3.60 x 1.22 = 4.392 -> 4.39');
+  assert.equal(priceCents('1.25', { markupCents: 0, vatBasisPoints: 2200 }), 153, '1.525 rounds half up');
+  assert.equal(priceCents('75.00', { markupCents: 350, vatBasisPoints: 0 }), 7850, 'VAT_RATE=0: net + markup');
+  assert.throws(() => priceCents('abc', site));
   const seen: Seen = { baseline: '', skus: {} };
-  const { products } = normalize(api([shoe('A1', 'Nike', [['42', 2, '100.00'], ['43', 0, '90.00'], ['41', 1, '110.00']])]), 350, seen, 14);
+  const { products } = normalize(api([shoe('A1', 'Nike', [['42', 2, '100.00'], ['43', 0, '90.00'], ['41', 1, '110.00']])]), site, seen, 14);
   const p = products[0];
-  assert.deepEqual(p.sizes.map((s) => [s.eu, s.price]), [['41', 11350], ['42', 10350], ['43', 9350]]);
-  assert.equal(p.from, 10350, '"from" ignores sold-out sizes');
+  assert.deepEqual(p.sizes.map((s) => [s.eu, s.price]), [['41', 13847], ['42', 12627], ['43', 11407]]);
+  assert.equal(p.from, 12627, '"from" ignores sold-out sizes');
   assert.equal(p.qty, 3);
 });
 
 test('supplier image URLs never reach the page', () => {
-  const { products, images } = normalize(api([shoe('A1', 'Nike', [['42', 1, '10.00']])]), 0, { baseline: '', skus: {} }, 14);
+  const { products, images } = normalize(api([shoe('A1', 'Nike', [['42', 1, '10.00']])]), NET, { baseline: '', skus: {} }, 14);
   assert.match(products[0].image ?? '', /^\/img\/A1\/[0-9a-f]{10}$/);
   assert.ok(!JSON.stringify(products).includes('goldensneakers'));
   assert.equal(images.size, 1);
@@ -38,12 +43,12 @@ test('supplier image URLs never reach the page', () => {
 test('"Novità": nothing on the first load, then products that appear later', () => {
   const seen: Seen = { baseline: '', skus: {} };
   const t0 = new Date('2026-11-01T10:00:00Z');
-  const first = normalize(api([shoe('A1', 'Nike', [['42', 1, '10.00']])]), 0, seen, 14, t0);
+  const first = normalize(api([shoe('A1', 'Nike', [['42', 1, '10.00']])]), NET, seen, 14, t0);
   assert.equal(first.products[0].isNew, false);
   const t1 = new Date('2026-11-05T10:00:00Z');
-  const second = normalize(api([shoe('A1', 'Nike', [['42', 1, '10.00']]), shoe('B2', 'Puma', [['40', 1, '10.00']])]), 0, seen, 14, t1);
+  const second = normalize(api([shoe('A1', 'Nike', [['42', 1, '10.00']]), shoe('B2', 'Puma', [['40', 1, '10.00']])]), NET, seen, 14, t1);
   assert.deepEqual(second.products.map((p) => [p.sku, p.isNew]), [['A1', false], ['B2', true]]);
-  const later = normalize(api([shoe('B2', 'Puma', [['40', 1, '10.00']])]), 0, seen, 14, new Date('2026-11-25T10:00:00Z'));
+  const later = normalize(api([shoe('B2', 'Puma', [['40', 1, '10.00']])]), NET, seen, 14, new Date('2026-11-25T10:00:00Z'));
   assert.equal(later.products[0].isNew, false, 'no longer new after NEW_DAYS');
 });
 
@@ -59,7 +64,7 @@ const catalog = normalize(
     shoe('A1', 'Adidas', [['42', 1, '60.00']], { name: 'adidas Sàmba OG' }),
     shoe('X0', 'Adidas', [['42', 0, '50.00']]),
   ]),
-  0,
+  NET,
   { baseline: '', skus: {} },
   14,
 ).products;

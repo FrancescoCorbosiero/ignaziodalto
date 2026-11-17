@@ -1,6 +1,7 @@
 # ignaziodalto.alpacode.it
 
-Catalogo sneakers vetrina: il listino di scs-b2b + 3,50 € a taglia, filtri
+Catalogo sneakers vetrina: il listino di scs-b2b + 3,50 € a taglia
+(sull'imponibile, poi IVA 22% inclusa), filtri
 istantanei, scheda prodotto con taglie e prezzi, preferiti e richiesta su
 WhatsApp. Astro 5 (Node standalone) + Preact, nessun database.
 

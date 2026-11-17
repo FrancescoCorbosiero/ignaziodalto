@@ -58,7 +58,7 @@ async function writeJson(name: string, data: unknown): Promise<void> {
 
 async function apply(api: ApiCatalog, source: State['source']): Promise<void> {
   seen ??= (await readJson<Seen>('seen.json')) ?? { baseline: new Date().toISOString(), skus: {} };
-  const { products, images } = normalize(api, env.markupCents, seen, env.newDays);
+  const { products, images } = normalize(api, { markupCents: env.markupCents, vatBasisPoints: env.vatBasisPoints }, seen, env.newDays);
   raw = api;
   state.products = products;
   state.bySku = new Map(products.map((p) => [p.sku, p]));

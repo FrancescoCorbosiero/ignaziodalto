@@ -73,9 +73,8 @@ Effort: S = mezza giornata, M = 1–2 giorni, L = 3+ giorni.
 
 ## Da decidere con il cliente
 
-- **IVA**: oggi i prezzi sono netti, con la scritta "IVA esclusa". Se il
-  catalogo si rivolge a **privati**, il Codice del consumo (D.Lgs. 206/2005)
-  chiede il prezzo finale IVA inclusa. Basta cambiare una riga di
-  configurazione; il dubbio è se i 3,50 € vadano prima o dopo l'IVA.
+- **IVA**: deciso. Il margine va sull'imponibile e i prezzi si mostrano IVA
+  22% inclusa: `(netto + 3,50) × 1,22`. Resta da valutare l'**arrotondamento
+  commerciale** (es. 95,77 → 95,90 o 96,00): oggi si arrotonda al centesimo.
 - **Contatti**: numero WhatsApp, e-mail e Instagram ancora da avere.
 - **Logo / identità**: oggi il nome è scritto con il carattere del sito.
