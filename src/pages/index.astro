@@ -1,10 +1,17 @@
 ---
 import Base from '../layouts/Base.astro';
 import Catalog from '../components/Catalog.tsx';
+import Rail from '../components/Rail.tsx';
 import { products, meta } from '../server/catalog.ts';
-import { apply, facets, parseFilters } from '../lib/filter.ts';
-import { bySize, when } from '../lib/format.ts';
+import { env } from '../server/env.ts';
+import { apply, facets, parseFilters, isFiltered } from '../lib/filter.ts';
+import { bySize, when, productPath } from '../lib/format.ts';
+import { contactHref, contactLabel } from '../lib/contact.ts';
+import { LOCALE_TAG, t as dict } from '../i18n.ts';
+import type { Product } from '../lib/types.ts';
 
+const locale = Astro.locals.locale;
+const t = dict(locale);
 const PAGE = 24;
 const all = products();
 const filters = parseFilters(Astro.url.searchParams);
@@ -13,27 +20,134 @@ const results = apply(all, filters);
 const shown = PAGE * page;
 const allSizes = [...new Set(all.flatMap((p) => p.sizes.filter((s) => s.qty > 0).map((s) => s.eu)))].sort(bySize);
 const available = all.filter((p) => p.qty > 0);
-const brands = new Set(available.map((p) => p.brand)).size;
+const brandNames = [...new Set(available.map((p) => p.brand))].sort();
 const pairs = available.reduce((n, p) => n + p.qty, 0);
-const updated = when(meta().syncedAt);
+const updated = when(meta().syncedAt, locale);
+const contact = contactHref(env, t.greeting(env.siteName), locale);
+
+// a link with filters (shared, or a no-JS search) goes straight to the results
+const landing = !isFiltered(filters) && filters.sort === 'rilevanza' && page === 1 && !filters.all;
+
+/** One per brand first, then the rest: a varied picture. */
+function spread(list: Product[], n: number): Product[] {
+  const seen = new Set<string>();
+  const first = list.filter((p) => !seen.has(p.brand) && seen.add(p.brand));
+  return [...first, ...list.filter((p) => !first.includes(p))].slice(0, n);
+}
+const withImage = available.filter((p) => p.image);
+const cover = spread([...withImage].sort((a, b) => Number(b.isNew) - Number(a.isNew) || b.qty - a.qty), 5);
+const fresh = available.filter((p) => p.isNew).sort((a, b) => b.firstSeen.localeCompare(a.firstSeen));
+const railNew = fresh.length >= 4;
+const rail = railNew ? fresh.slice(0, 12) : spread([...available].sort((a, b) => b.sizes.filter((s) => s.qty > 0).length - a.sizes.filter((s) => s.qty > 0).length), 12);
+const fmt = (n: number) => n.toLocaleString(LOCALE_TAG[locale]);
 
 Astro.response.headers.set('Cache-Control', 'no-cache');
 ---
 
 <Base>
-  <div class="wrap">
-    <section class="hero">
-      <h1>
-        <span class="hero-line" style="color:inherit;-webkit-text-stroke:0">Sneakers</span>
-        <span class="hero-line">disponibili</span>
-      </h1>
-      <div class="hero-facts">
-        <strong>{available.length}</strong>
-        <span>modelli di {brands} brand · {pairs.toLocaleString('it-IT')} paia</span>
-        {updated && <span class="live">Disponibilità aggiornata {updated}</span>}
-      </div>
-    </section>
+  {
+    landing && (
+      <>
+        <section class="cover">
+          <div class="wrap cover-grid">
+            <div class="cover-text">
+              <p class="kicker">{t.coverKicker}</p>
+              <h1>
+                <span class="cover-line">{t.coverTitle[0]}</span>
+                <span class="cover-line outline">{t.coverTitle[1]}</span>
+              </h1>
+              <p class="cover-lead">{t.coverLead(available.length, brandNames.length)}</p>
+              <div class="cover-ctas">
+                <a class="btn btn-accent btn-lg" href="#catalogo">
+                  {t.browse}
+                </a>
+                {contact && (
+                  <a class="btn btn-on-dark btn-lg" href={contact} target="_blank" rel="noopener">
+                    {t.askOn(contactLabel(env))}
+                  </a>
+                )}
+              </div>
+              <dl class="cover-stats">
+                <div>
+                  <dt>{t.statModels}</dt>
+                  <dd>{fmt(available.length)}</dd>
+                </div>
+                <div>
+                  <dt>{t.statBrands}</dt>
+                  <dd>{brandNames.length}</dd>
+                </div>
+                <div>
+                  <dt>{t.statPairs}</dt>
+                  <dd>{fmt(pairs)}</dd>
+                </div>
+              </dl>
+              {updated && <p class="live live-on-dark">{t.updated(updated)}</p>}
+            </div>
+            <div class="cover-art" aria-hidden="true">
+              {cover.map((p, i) => (
+                <a class={`cover-tile tile-${i}`} href={productPath(p.sku)} tabindex="-1">
+                  <img src={`${p.image}?w=480`} alt="" width="480" height="384" loading={i < 3 ? 'eager' : 'lazy'} decoding="async" />
+                </a>
+              ))}
+            </div>
+          </div>
+        </section>
 
+        {brandNames.length > 1 && (
+          <div class="marquee" aria-hidden="true">
+            <div class="marquee-track">
+              {[0, 1].map(() => (
+                <span class="marquee-set">
+                  {brandNames.map((b) => (
+                    <>
+                      <span class="marquee-word">{b}</span>
+                      <span class="marquee-dot">●</span>
+                    </>
+                  ))}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {rail.length >= 4 && (
+          <section class="wrap band">
+            <div class="band-head">
+              <div>
+                <h2 class="section-title">{railNew ? t.newTitle : t.featuredTitle}</h2>
+                <p class="band-lead">{railNew ? t.newLead : t.featuredLead}</p>
+              </div>
+              <a class="btn" href={railNew ? '/?ordina=novita#catalogo' : '#catalogo'}>
+                {t.seeAll}
+              </a>
+            </div>
+            <Rail client:visible items={rail} locale={locale} scroll />
+          </section>
+        )}
+
+        <section class="how">
+          <div class="wrap">
+            <h2 class="section-title">{t.howTitle}</h2>
+            <ol class="how-steps">
+              {t.how.map(([title, text], i) => (
+                <li>
+                  <span class="how-n">{String(i + 1).padStart(2, '0')}</span>
+                  <h3>{title}</h3>
+                  <p>{text}</p>
+                </li>
+              ))}
+            </ol>
+          </div>
+        </section>
+      </>
+    )
+  }
+
+  <div class="wrap" id="catalogo">
+    <div class="catalog-head">
+      <h2 class="section-title">{t.catalogTitle}</h2>
+      {updated && <span class="live">{t.updated(updated)}</span>}
+    </div>
     <Catalog
       client:load
       items={results.slice(0, shown)}
@@ -43,6 +157,23 @@ Astro.response.headers.set('Cache-Control', 'no-cache');
       pageSize={PAGE}
       shown={shown}
       allSizes={allSizes}
+      locale={locale}
     />
   </div>
+
+  {
+    contact && (
+      <section class="wrap">
+        <div class="cta-block">
+          <div>
+            <h2>{t.ctaTitle}</h2>
+            <p>{t.ctaLead}</p>
+          </div>
+          <a class="btn btn-solid btn-lg" href={contact} target="_blank" rel="noopener">
+            {t.askOn(contactLabel(env))}
+          </a>
+        </div>
+      </section>
+    )
+  }
 </Base>

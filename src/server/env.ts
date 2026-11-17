@@ -1,5 +1,6 @@
 // Runtime configuration, read from the environment (documented in .env.example).
 import path from 'node:path';
+import { t, type Locale } from '../i18n.ts';
 
 const str = (k: string, d = ''): string => {
   const v = process.env[k];
@@ -29,7 +30,8 @@ export const env = {
   markupCents: parseEuroCents(str('PRICE_MARKUP_EUR', '3.50')),
   /** VAT added after the markup, in basis points: "22" -> 2200. 0 = net prices. */
   vatBasisPoints: vatBasisPoints,
-  priceNote: str('PRICE_NOTE', vatBasisPoints > 0 ? 'Prezzi IVA inclusa' : 'Prezzi IVA esclusa'),
+  /** Fixed note next to prices (any language); empty = the dictionary's, per language. */
+  priceNote: str('PRICE_NOTE'),
   dataDir: path.resolve(str('DATA_DIR', 'data')),
   newDays: Math.max(1, int('NEW_DAYS', 14)),
   /** Pictures made at once (download + resize): keep it low on a small VPS. */
@@ -42,27 +44,17 @@ export const env = {
   /** Public address, for the links inside the messages customers send. */
   siteUrl: str('SITE_URL', 'https://ignaziodalto.alpacode.it').replace(/\/+$/, ''),
   siteName: str('SITE_NAME', 'Ignazio Dalto'),
-  tagline: str('SITE_TAGLINE', 'Sneakers originali, disponibilità aggiornata'),
+  /** Fixed tagline (any language); empty = the dictionary's, per language. */
+  tagline: str('SITE_TAGLINE'),
   whatsapp: str('CONTACT_WHATSAPP').replace(/[^\d]/g, ''),
   email: str('CONTACT_EMAIL'),
   instagram: str('CONTACT_INSTAGRAM').replace(/^@/, ''),
 };
 
-export type PublicConfig = {
-  siteName: string;
-  priceNote: string;
-  whatsapp: string;
-  email: string;
-  lowStock: number;
-};
+export function priceNoteFor(locale: Locale): string {
+  return env.priceNote || t(locale).priceNote(env.vatBasisPoints > 0);
+}
 
-/** What the browser may know about the configuration. */
-export function publicConfig(): PublicConfig {
-  return {
-    siteName: env.siteName,
-    priceNote: env.priceNote,
-    whatsapp: env.whatsapp,
-    email: env.email,
-    lowStock: env.lowStock,
-  };
+export function taglineFor(locale: Locale): string {
+  return env.tagline || t(locale).tagline;
 }

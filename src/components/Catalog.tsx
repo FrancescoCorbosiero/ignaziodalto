@@ -3,7 +3,8 @@
 // it downloads the whole catalog once and filters instantly in the browser.
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import { apply, EMPTY, facets as facetsOf, isFiltered, priceFor, SORTS, toSearchParams, type Facets, type Filters } from '../lib/filter.ts';
-import { CATEGORY_LABEL, type Category, type Product } from '../lib/types.ts';
+import type { Category, Product } from '../lib/types.ts';
+import { t as dict, type Locale } from '../i18n.ts';
 import { KEYS, loadIndex, toast, useFavs, useStored } from '../lib/client/store.ts';
 import { ProductCard } from './ProductCard.tsx';
 import { Icon } from './Icon.tsx';
@@ -17,9 +18,11 @@ interface Props {
   shown: number;
   /** Every EU size of the catalog: the "your size" picker. */
   allSizes: string[];
+  locale: Locale;
 }
 
 export default function Catalog(props: Props) {
+  const t = dict(props.locale);
   const [filters, setFilters] = useState<Filters>(props.filters);
   const [all, setAll] = useState<Product[] | null>(null);
   const [shown, setShown] = useState(props.shown);
@@ -37,7 +40,7 @@ export default function Catalog(props: Props) {
     const go = () =>
       loadIndex()
         .then((idx) => setAll(idx.products))
-        .catch(() => toast('Connessione assente: i filtri si aggiornano ricaricando la pagina'));
+        .catch(() => toast(t.offline));
     const idle = (window as { requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => number }).requestIdleCallback;
     if (idle) idle(go, { timeout: 1500 });
     else setTimeout(go, 300);
@@ -106,22 +109,22 @@ export default function Catalog(props: Props) {
   const chips: { label: string; off: () => void }[] = [
     ...(filters.q ? [{ label: `“${filters.q}”`, off: () => (setQ(''), set({ q: '' })) }] : []),
     ...filters.brands.map((b) => ({ label: b, off: () => set({ brands: filters.brands.filter((x) => x !== b) }) })),
-    ...filters.cats.map((c) => ({ label: CATEGORY_LABEL[c], off: () => set({ cats: filters.cats.filter((x) => x !== c) }) })),
+    ...filters.cats.map((c) => ({ label: t.categories[c], off: () => set({ cats: filters.cats.filter((x) => x !== c) }) })),
     ...filters.sizes.map((s) => ({ label: `EU ${s}`, off: () => set({ sizes: filters.sizes.filter((x) => x !== s) }) })),
-    ...(filters.min !== null ? [{ label: `da ${filters.min} €`, off: () => set({ min: null }) }] : []),
-    ...(filters.max !== null ? [{ label: `fino a ${filters.max} €`, off: () => set({ max: null }) }] : []),
+    ...(filters.min !== null ? [{ label: t.chipFrom(filters.min), off: () => set({ min: null }) }] : []),
+    ...(filters.max !== null ? [{ label: t.chipTo(filters.max), off: () => set({ max: null }) }] : []),
   ];
 
   const submit = (e: Event) => live && e.preventDefault();
   const sizeValue = filters.sizes.length === 1 ? filters.sizes[0] : '';
 
   return (
-    <form method="get" action="/" onSubmit={submit} class="catalog-form">
+    <form method="get" action="/#catalogo" onSubmit={submit} class="catalog-form">
       <nav class="brand-rail" aria-label="Brand">
         {facets.brands.map((b) => (
           <a
             class="brand-chip"
-            href={`/?brand=${encodeURIComponent(b.value)}`}
+            href={`/?brand=${encodeURIComponent(b.value)}#catalogo`}
             aria-pressed={filters.brands.includes(b.value)}
             onClick={(e) => {
               if (!live) return;
@@ -136,64 +139,64 @@ export default function Catalog(props: Props) {
 
       <div class="toolbar">
         <label class="search">
-          <span class="sr-only">Cerca</span>
+          <span class="sr-only">{t.search}</span>
           <Icon name="search" />
           <input
             type="search"
             name="q"
             value={q}
-            placeholder="Cerca modello, brand o codice…"
+            placeholder={t.searchPlaceholder}
             autocomplete="off"
             enterkeyhint="search"
             onInput={(e) => setQ(e.currentTarget.value)}
           />
           {q && (
-            <button type="button" class="clear" aria-label="Cancella la ricerca" onClick={() => (setQ(''), set({ q: '' }))}>
+            <button type="button" class="clear" aria-label={t.clearSearch} onClick={() => (setQ(''), set({ q: '' }))}>
               <Icon name="x" />
             </button>
           )}
         </label>
         <label class="js-only">
-          <span class="sr-only">La tua taglia</span>
+          <span class="sr-only">{t.yourSize}</span>
           <select class={`select${filters.sizes.length ? ' is-set' : ''}`} value={sizeValue} onChange={(e) => chooseMySize(e.currentTarget.value)}>
-            <option value="">{filters.sizes.length > 1 ? `${filters.sizes.length} taglie` : 'La tua taglia'}</option>
+            <option value="">{filters.sizes.length > 1 ? t.nSizes(filters.sizes.length) : t.yourSize}</option>
             {props.allSizes.map((s) => (
               <option value={s}>EU {s}</option>
             ))}
           </select>
         </label>
         <label class="sort-select">
-          <span class="sr-only">Ordina</span>
+          <span class="sr-only">{t.sort}</span>
           <select name="ordina" class="select" value={filters.sort} onChange={(e) => set({ sort: e.currentTarget.value as Filters['sort'] })}>
             {SORTS.map((s) => (
-              <option value={s.value}>{s.label}</option>
+              <option value={s}>{t.sorts[s]}</option>
             ))}
           </select>
         </label>
         <button type="button" class="btn filters-toggle" aria-expanded={open} aria-controls="filters" onClick={() => setOpen(true)}>
-          <Icon name="sliders" /> Filtri
+          <Icon name="sliders" /> {t.filters}
           {chips.length > 0 && <span class="count-pill">{chips.length}</span>}
         </button>
       </div>
 
       <div class="catalog">
-        <aside id="filters" class={`panel${open ? ' is-open' : ''}`} aria-label="Filtri">
+        <aside id="filters" class={`panel${open ? ' is-open' : ''}`} aria-label={t.filters}>
           <div class="panel-head">
-            <h2>Filtri</h2>
-            <button type="button" class="btn btn-ghost" aria-label="Chiudi i filtri" onClick={() => setOpen(false)}>
+            <h2>{t.filters}</h2>
+            <button type="button" class="btn btn-ghost" aria-label={t.closeFilters} onClick={() => setOpen(false)}>
               <Icon name="x" />
             </button>
           </div>
           <div class="panel-body">
             {facets.cats.length > 1 && (
               <fieldset class="group" style="border-inline:0;border-top:0;margin:0;padding-inline:0">
-                <h3>Categoria</h3>
+                <h3>{t.category}</h3>
                 <ul class="checks">
                   {facets.cats.map((c) => (
                     <li>
                       <label class={`check${c.count === 0 ? ' is-empty' : ''}`}>
                         <input type="checkbox" name="cat" value={c.value} checked={filters.cats.includes(c.value)} onChange={() => set({ cats: flip<Category>(filters.cats, c.value) })} />
-                        {CATEGORY_LABEL[c.value]}
+                        {t.categories[c.value]}
                         <span class="n">{c.count}</span>
                       </label>
                     </li>
@@ -203,7 +206,7 @@ export default function Catalog(props: Props) {
             )}
 
             <div class="group">
-              <h3>Taglia EU</h3>
+              <h3>{t.sizeEu}</h3>
               <div class="size-grid">
                 {facets.sizes.map((s) => (
                   <label class="size-btn" data-on={filters.sizes.includes(s.value)} data-empty={s.count === 0}>
@@ -222,7 +225,7 @@ export default function Catalog(props: Props) {
             </div>
 
             <div class="group">
-              <h3>Brand</h3>
+              <h3>{t.brand}</h3>
               <ul class="checks">
                 {facets.brands.map((b) => (
                   <li>
@@ -237,14 +240,14 @@ export default function Catalog(props: Props) {
             </div>
 
             <div class="group">
-              <h3>Prezzo</h3>
+              <h3>{t.price}</h3>
               <div class="price-inputs">
                 <label>
-                  Da €
+                  {t.priceFrom}
                   <input type="number" name="min" inputMode="numeric" min={0} step={1} placeholder={facets.price ? String(facets.price.min) : ''} value={filters.min ?? ''} onChange={(e) => set({ min: e.currentTarget.value === '' ? null : Math.max(0, Number(e.currentTarget.value)) })} />
                 </label>
                 <label>
-                  A €
+                  {t.priceTo}
                   <input type="number" name="max" inputMode="numeric" min={0} step={1} placeholder={facets.price ? String(facets.price.max) : ''} value={filters.max ?? ''} onChange={(e) => set({ max: e.currentTarget.value === '' ? null : Math.max(0, Number(e.currentTarget.value)) })} />
                 </label>
               </div>
@@ -252,23 +255,23 @@ export default function Catalog(props: Props) {
 
             <div class="group">
               <label class="toggle">
-                Mostra anche gli esauriti
+                {t.showSoldOut}
                 <input type="checkbox" name="esauriti" value="1" checked={filters.all} onChange={(e) => set({ all: e.currentTarget.checked })} />
               </label>
             </div>
 
             <div class="group no-js">
               <button type="submit" class="btn btn-solid" style="width:100%">
-                Applica i filtri
+                {t.apply}
               </button>
             </div>
           </div>
           <div class="panel-foot">
             <button type="button" class="btn" onClick={reset}>
-              Azzera
+              {t.reset}
             </button>
             <button type="button" class="btn btn-solid" onClick={() => setOpen(false)}>
-              Mostra {total} {total === 1 ? 'modello' : 'modelli'}
+              {t.showN(total)}
             </button>
           </div>
         </aside>
@@ -277,32 +280,30 @@ export default function Catalog(props: Props) {
         <section aria-live="polite" aria-busy={stale}>
           <div class="results-head">
             <p class="results-count">
-              <strong>{total}</strong> {total === 1 ? 'modello' : 'modelli'}
-              {filters.sizes.length > 0 && <> nella tua taglia</>}
+              <strong>{total}</strong> {t.models(total)}
+              {filters.sizes.length > 0 && t.inYourSize}
             </p>
             {chips.map((c) => (
-              <button type="button" class="chip" onClick={c.off} aria-label={`Togli il filtro ${c.label}`}>
+              <button type="button" class="chip" onClick={c.off} aria-label={t.removeFilter(c.label)}>
                 {c.label} <Icon name="x" />
               </button>
             ))}
             {chips.length > 1 && (
               <button type="button" class="link-btn" onClick={reset}>
-                Azzera tutto
+                {t.resetAll}
               </button>
             )}
           </div>
 
           {total === 0 && !stale ? (
             <div class="empty">
-              <h2>Nessun paio</h2>
+              <h2>{t.emptyTitle}</h2>
               <p>
-                {filters.sizes.length > 0
-                  ? 'In questa taglia non c’è nulla che corrisponda. Prova a togliere qualche filtro o a cercare in un’altra taglia.'
-                  : 'Nessun modello corrisponde alla ricerca. Prova con meno parole o togli qualche filtro.'}
+                {filters.sizes.length > 0 ? t.emptySize : t.emptyAny}
               </p>
               {isFiltered(filters) && (
                 <button type="button" class="btn btn-solid" onClick={reset}>
-                  Vedi tutto il catalogo
+                  {t.seeCatalog}
                 </button>
               )}
             </div>
@@ -315,11 +316,12 @@ export default function Catalog(props: Props) {
                   price={priceFor(p, filters)}
                   hits={filters.sizes}
                   eager={i < 4}
+                  locale={props.locale}
                   fav={has(p.sku)}
                   onFav={() => {
                     const adding = !has(p.sku);
                     toggle(p.sku, filters.sizes.length === 1 ? filters.sizes[0] : undefined);
-                    toast(adding ? 'Aggiunto ai preferiti' : 'Tolto dai preferiti');
+                    toast(adding ? t.favAdded : t.favRemoved);
                   }}
                 />
               ))}
@@ -337,7 +339,7 @@ export default function Catalog(props: Props) {
                   setShown((n) => n + props.pageSize);
                 }}
               >
-                Mostra altri
+                {t.more}
               </a>
             </div>
           )}

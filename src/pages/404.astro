@@ -1,11 +1,14 @@
 ---
 import Base from '../layouts/Base.astro';
+import { t as dict } from '../i18n.ts';
+
+const t = dict(Astro.locals.locale ?? 'it');
 ---
 
-<Base title="Pagina non trovata">
+<Base title={t.pageNotFound}>
   <div class="wrap empty" style="min-height:50vh;align-content:center">
-    <h2>Fuori misura</h2>
-    <p>Questa pagina non esiste. Il catalogo invece sì.</p>
-    <a class="btn btn-solid" href="/">Vai al catalogo</a>
+    <h2>{t.notFoundTitle}</h2>
+    <p>{t.notFoundText}</p>
+    <a class="btn btn-solid" href="/#catalogo">{t.goToCatalog}</a>
   </div>
 </Base>

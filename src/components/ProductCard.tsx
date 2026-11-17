@@ -1,5 +1,6 @@
 import { euro, productPath } from '../lib/format.ts';
 import type { Product } from '../lib/types.ts';
+import { t as dict, type Locale } from '../i18n.ts';
 import { Icon, ShoeMark } from './Icon.tsx';
 
 /** A product's total pairs at or below this: "Ultimi pezzi". */
@@ -15,6 +16,7 @@ interface Props {
   onFav?: () => void;
   /** First cards of the page: load their pictures at once. */
   eager?: boolean;
+  locale: Locale;
 }
 
 /**
@@ -38,32 +40,34 @@ export function Picture({ p, eager, large, sizes }: { p: Product; eager?: boolea
   );
 }
 
-export function Badges({ p }: { p: Product }) {
+export function Badges({ p, locale }: { p: Product; locale: Locale }) {
+  const t = dict(locale);
   const soldOut = p.qty <= 0;
   if (!soldOut && !p.isNew && p.qty > LOW_TOTAL) return null;
   return (
     <span class="badges">
-      {soldOut && <span class="badge badge-out">Esaurito</span>}
-      {!soldOut && p.isNew && <span class="badge badge-new">Novità</span>}
-      {!soldOut && p.qty <= LOW_TOTAL && <span class="badge badge-low">Ultimi pezzi</span>}
+      {soldOut && <span class="badge badge-out">{t.soldOut}</span>}
+      {!soldOut && p.isNew && <span class="badge badge-new">{t.isNew}</span>}
+      {!soldOut && p.qty <= LOW_TOTAL && <span class="badge badge-low">{t.lastPairs}</span>}
     </span>
   );
 }
 
-export function ProductCard({ p, price, hits = [], fav = false, onFav, eager }: Props) {
+export function ProductCard({ p, price, hits = [], fav = false, onFav, eager, locale }: Props) {
+  const t = dict(locale);
   const inStock = p.sizes.filter((s) => s.qty > 0);
   const exact = hits.length > 0 && inStock.some((s) => hits.includes(s.eu));
   return (
     <article class={`card${p.qty <= 0 ? ' is-soldout' : ''}`}>
       <a class="card-media" href={productPath(p.sku)} tabIndex={-1} aria-hidden="true">
         <Picture p={p} eager={eager} sizes="(max-width: 560px) 50vw, (max-width: 1023px) 33vw, 280px" />
-        <Badges p={p} />
+        <Badges p={p} locale={locale} />
       </a>
       <button
         type="button"
         class="fav"
         aria-pressed={fav}
-        aria-label={fav ? `Togli ${p.name} dai preferiti` : `Aggiungi ${p.name} ai preferiti`}
+        aria-label={fav ? t.favRemove(p.name) : t.favAdd(p.name)}
         onClick={onFav}
       >
         <Icon name="heart" />
@@ -75,15 +79,15 @@ export function ProductCard({ p, price, hits = [], fav = false, onFav, eager }: 
         </h3>
         <div class="card-foot">
           <span class="price">
-            {!exact && inStock.length > 1 && <small>da</small>}
-            {euro(price)}
+            {!exact && inStock.length > 1 && <small>{t.from}</small>}
+            {euro(price, locale)}
           </span>
           <span class="card-sizes">
-            {inStock.length === 0 ? 'Esaurito' : inStock.length === 1 ? '1 taglia' : `${inStock.length} taglie`}
+            {t.sizesCount(inStock.length)}
           </span>
         </div>
         {inStock.length > 0 && (
-          <div class="size-dots" aria-label="Taglie disponibili (EU)">
+          <div class="size-dots" aria-label={t.sizesAvailable}>
             {inStock.slice(0, 9).map((s) => (
               <span class={hits.includes(s.eu) ? 'is-hit' : undefined}>{s.eu}</span>
             ))}

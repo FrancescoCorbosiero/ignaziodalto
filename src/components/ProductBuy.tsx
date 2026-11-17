@@ -3,6 +3,7 @@ import { useEffect, useState } from 'preact/hooks';
 import { euro } from '../lib/format.ts';
 import { contactHref, contactLabel, requestText, type ContactConfig } from '../lib/contact.ts';
 import type { Product } from '../lib/types.ts';
+import { t as dict, type Locale } from '../i18n.ts';
 import { KEYS, toast, useFavs, useStored } from '../lib/client/store.ts';
 import { Icon } from './Icon.tsx';
 
@@ -13,9 +14,11 @@ interface Props {
   lowStock: number;
   /** https://… of this site, for the link in the message. */
   origin: string;
+  locale: Locale;
 }
 
-export default function ProductBuy({ p, contact, priceNote, lowStock, origin }: Props) {
+export default function ProductBuy({ p, contact, priceNote, lowStock, origin, locale }: Props) {
+  const t = dict(locale);
   const [mySize] = useStored<string | null>(KEYS.size, null);
   const [system, setSystem] = useStored<'eu' | 'us'>(KEYS.system, 'eu');
   const [eu, setEu] = useState<string | null>(null);
@@ -30,7 +33,7 @@ export default function ProductBuy({ p, contact, priceNote, lowStock, origin }: 
   const chosen = p.sizes.find((s) => s.eu === eu);
   const inStock = p.sizes.filter((s) => s.qty > 0);
   const samePrice = new Set(inStock.map((s) => s.price)).size <= 1;
-  const href = contactHref(contact, requestText([{ p, eu: chosen?.eu }], origin));
+  const href = contactHref(contact, requestText([{ p, eu: chosen?.eu }], origin, locale), locale);
 
   const share = async () => {
     const url = location.href;
@@ -38,7 +41,7 @@ export default function ProductBuy({ p, contact, priceNote, lowStock, origin }: 
       if (navigator.share) await navigator.share({ title: p.name, url });
       else {
         await navigator.clipboard.writeText(url);
-        toast('Link copiato');
+        toast(t.linkCopied);
       }
     } catch {
       /* closed by the visitor */
@@ -49,11 +52,11 @@ export default function ProductBuy({ p, contact, priceNote, lowStock, origin }: 
     <div class="buy">
       <div class="buy-price">
         <span class="price">
-          {!chosen && !samePrice && <small>da</small>}
-          {euro(chosen ? chosen.price : p.from)}
+          {!chosen && !samePrice && <small>{t.from}</small>}
+          {euro(chosen ? chosen.price : p.from, locale)}
         </span>
         <span class="note">
-          {chosen ? `Taglia EU ${chosen.eu} · ` : ''}
+          {chosen ? `${t.sizeLabel(chosen.eu)} · ` : ''}
           {priceNote}
         </span>
       </div>
@@ -61,8 +64,8 @@ export default function ProductBuy({ p, contact, priceNote, lowStock, origin }: 
       {inStock.length > 0 ? (
         <div>
           <div class="size-head">
-            <h2>Scegli la taglia</h2>
-            <div class="seg" role="group" aria-label="Sistema taglie">
+            <h2>{t.pickSize}</h2>
+            <div class="seg" role="group" aria-label={t.sizeSystem}>
               <button type="button" aria-pressed={system === 'eu'} onClick={() => setSystem('eu')}>
                 EU
               </button>
@@ -82,24 +85,24 @@ export default function ProductBuy({ p, contact, priceNote, lowStock, origin }: 
                   setEu(eu === s.eu ? null : s.eu);
                   if (fav) setSize(p.sku, eu === s.eu ? undefined : s.eu);
                 }}
-                aria-label={`Taglia EU ${s.eu}${s.us ? `, US ${s.us}` : ''}, ${s.qty > 0 ? euro(s.price) : 'esaurita'}`}
+                aria-label={`${t.sizeLabel(s.eu)}${s.us ? `, US ${s.us}` : ''}, ${s.qty > 0 ? euro(s.price, locale) : t.soldOutSize}`}
               >
                 <b>{system === 'us' && s.us ? s.us : s.eu}</b>
-                <span>{s.qty > 0 ? (samePrice ? (system === 'us' ? `EU ${s.eu}` : s.us ? `US ${s.us}` : '') : euro(s.price)) : 'esaurita'}</span>
-                {s.qty > 0 && s.qty <= lowStock && <em>{s.qty === 1 ? 'Ultimo' : `Ultimi ${s.qty}`}</em>}
+                <span>{s.qty > 0 ? (samePrice ? (system === 'us' ? `EU ${s.eu}` : s.us ? `US ${s.us}` : '') : euro(s.price, locale)) : t.soldOutSize}</span>
+                {s.qty > 0 && s.qty <= lowStock && <em>{s.qty === 1 ? t.lastOne : t.lastN(s.qty)}</em>}
               </button>
             ))}
           </div>
         </div>
       ) : (
-        <p class="buy-hint">Al momento è esaurito in tutte le taglie. Aggiungilo ai preferiti e chiedici quando torna.</p>
+        <p class="buy-hint">{t.allSoldOut}</p>
       )}
 
       <div class="buy-actions">
         {href ? (
           <a class="btn btn-accent" href={href} target="_blank" rel="noopener">
             <Icon name={contact.whatsapp ? 'chat' : 'mail'} />
-            {chosen ? `Richiedi la ${chosen.eu} su ${contactLabel(contact)}` : `Chiedi su ${contactLabel(contact)}`}
+            {chosen ? t.requestSize(chosen.eu, contactLabel(contact)) : t.askChannel(contactLabel(contact))}
           </a>
         ) : (
           <span />
@@ -108,19 +111,19 @@ export default function ProductBuy({ p, contact, priceNote, lowStock, origin }: 
           type="button"
           class="btn fav-btn"
           aria-pressed={fav}
-          aria-label={fav ? 'Togli dai preferiti' : 'Aggiungi ai preferiti'}
+          aria-label={fav ? t.favRemoveShort : t.favAddShort}
           onClick={() => {
             toggle(p.sku, eu ?? undefined);
-            toast(fav ? 'Tolto dai preferiti' : 'Aggiunto ai preferiti');
+            toast(fav ? t.favRemoved : t.favAdded);
           }}
         >
           <Icon name="heart" />
         </button>
-        <button type="button" class="btn" aria-label="Condividi" onClick={share}>
+        <button type="button" class="btn" aria-label={t.share} onClick={share}>
           <Icon name="share" />
         </button>
       </div>
-      {href && !chosen && inStock.length > 1 && <p class="buy-hint">Scegli la taglia: la scriviamo noi nel messaggio, insieme a modello e prezzo.</p>}
+      {href && !chosen && inStock.length > 1 && <p class="buy-hint">{t.pickHint}</p>}
     </div>
   );
 }

@@ -5,11 +5,6 @@ export type Category = 'adult' | 'gs' | 'ps';
 
 export const CATEGORIES: Category[] = ['adult', 'gs', 'ps'];
 
-export const CATEGORY_LABEL: Record<Category, string> = {
-  adult: 'Adulto',
-  gs: 'Ragazzo · GS',
-  ps: 'Bambino · PS',
-};
 
 export interface Size {
   /** EU size, always a string ("36 2/3"). */

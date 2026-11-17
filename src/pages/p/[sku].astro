@@ -4,9 +4,13 @@ import ProductBuy from '../../components/ProductBuy.tsx';
 import Rail from '../../components/Rail.tsx';
 import { Badges, Picture } from '../../components/ProductCard.tsx';
 import { product, products, meta } from '../../server/catalog.ts';
-import { env } from '../../server/env.ts';
+import { env, priceNoteFor } from '../../server/env.ts';
+import { t as dict } from '../../i18n.ts';
 import { euro, when } from '../../lib/format.ts';
-import { CATEGORY_LABEL } from '../../lib/types.ts';
+
+const locale = Astro.locals.locale;
+const t = dict(locale);
+const priceNote = priceNoteFor(locale);
 
 const raw = Astro.params.sku ?? '';
 const decoded = (() => {
@@ -30,45 +34,45 @@ const related = p
 const fallback = p && related.length < 4
   ? products().filter((x) => x.sku !== p.sku && x.qty > 0 && x.brand !== p.brand).sort((a, b) => b.qty - a.qty).slice(0, 8 - related.length)
   : [];
-const updated = when(meta().syncedAt);
+const updated = when(meta().syncedAt, locale);
 const contact = { siteName: env.siteName, whatsapp: env.whatsapp, email: env.email };
 ---
 
 {
   p ? (
-    <Base title={p.name} description={`${p.brand} · ${p.name} · da ${euro(p.from)} (${env.priceNote.toLowerCase()})`} image={p.image}>
+    <Base title={p.name} description={`${p.brand} · ${p.name} · ${t.from} ${euro(p.from, locale)} (${priceNote.toLowerCase()})`} image={p.image}>
       <div class="wrap">
-        <nav class="crumbs" aria-label="Percorso">
-          <a href="/">Catalogo</a>
+        <nav class="crumbs" aria-label={t.path}>
+          <a href="/#catalogo">{t.catalog}</a>
           <span aria-hidden="true">/</span>
-          <a href={`/?brand=${encodeURIComponent(p.brand)}`}>{p.brand}</a>
+          <a href={`/?brand=${encodeURIComponent(p.brand)}#catalogo`}>{p.brand}</a>
         </nav>
         <article class="pdp">
           <div class="pdp-media">
             <Picture p={p} eager large sizes="(max-width: 900px) 100vw, 55vw" />
-            <Badges p={p} />
+            <Badges p={p} locale={locale} />
           </div>
           <div class="pdp-info">
             <p class="pdp-brand">
-              <a href={`/?brand=${encodeURIComponent(p.brand)}`}>{p.brand}</a>
+              <a href={`/?brand=${encodeURIComponent(p.brand)}#catalogo`}>{p.brand}</a>
             </p>
             <h1 class="pdp-title">{p.name}</h1>
-            <p class="pdp-sku">Codice {p.sku}</p>
-            <ProductBuy client:load p={p} contact={contact} priceNote={env.priceNote} lowStock={env.lowStock} origin={env.siteUrl} />
+            <p class="pdp-sku">{`${t.code} ${p.sku}`}</p>
+            <ProductBuy client:load p={p} contact={contact} priceNote={priceNote} lowStock={env.lowStock} origin={env.siteUrl} locale={locale} />
             <ul class="facts">
               <li>
-                <span>Categoria</span>
-                <span>{CATEGORY_LABEL[p.category]}</span>
+                <span>{t.category}</span>
+                <span>{t.categories[p.category]}</span>
               </li>
               <li>
-                <span>Taglie disponibili</span>
-                <span>{p.sizes.filter((s) => s.qty > 0).length} su {p.sizes.length}</span>
+                <span>{t.sizesInStock}</span>
+                <span>{t.ofTotal(p.sizes.filter((s) => s.qty > 0).length, p.sizes.length)}</span>
               </li>
               {
                 updated && (
                   <li>
-                    <span>Disponibilità</span>
-                    <span class="live">aggiornata {updated}</span>
+                    <span>{t.availability}</span>
+                    <span class="live">{t.updatedShort(updated)}</span>
                   </li>
                 )
               }
@@ -79,18 +83,18 @@ const contact = { siteName: env.siteName, whatsapp: env.whatsapp, email: env.ema
       {
         related.length + fallback.length > 0 && (
           <section class="wrap rail">
-            <h2 class="section-title">{related.length > 0 ? `Altre ${p.brand}` : 'Potrebbero piacerti'}</h2>
-            <Rail client:visible items={[...related, ...fallback]} />
+            <h2 class="section-title">{related.length > 0 ? t.moreFrom(p.brand) : t.youMayLike}</h2>
+            <Rail client:visible items={[...related, ...fallback]} locale={locale} scroll />
           </section>
         )
       }
     </Base>
   ) : (
-    <Base title="Modello non trovato">
+    <Base title={t.modelNotFound}>
       <div class="wrap empty" style="min-height:50vh;align-content:center">
-        <h2>Non c’è più</h2>
-        <p>Questo modello non è più a catalogo: il fornitore lo ha esaurito o ritirato. Dai un’occhiata a quelli disponibili.</p>
-        <a class="btn btn-solid" href="/">Vai al catalogo</a>
+        <h2>{t.goneTitle}</h2>
+        <p>{t.goneText}</p>
+        <a class="btn btn-solid" href="/#catalogo">{t.goToCatalog}</a>
       </div>
     </Base>
   )

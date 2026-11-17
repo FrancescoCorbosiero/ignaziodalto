@@ -5,13 +5,7 @@ import { bySize, fold } from './format.ts';
 
 export type Sort = 'rilevanza' | 'novita' | 'prezzo_asc' | 'prezzo_desc' | 'nome';
 
-export const SORTS: { value: Sort; label: string }[] = [
-  { value: 'rilevanza', label: 'In evidenza' },
-  { value: 'novita', label: 'Novità' },
-  { value: 'prezzo_asc', label: 'Prezzo crescente' },
-  { value: 'prezzo_desc', label: 'Prezzo decrescente' },
-  { value: 'nome', label: 'Nome A–Z' },
-];
+export const SORTS: Sort[] = ['rilevanza', 'novita', 'prezzo_asc', 'prezzo_desc', 'nome'];
 
 export interface Filters {
   q: string;
@@ -54,7 +48,7 @@ export function parseFilters(sp: URLSearchParams): Filters {
     min: num(sp.get('min')),
     max: num(sp.get('max')),
     all: sp.get('esauriti') === '1',
-    sort: SORTS.some((s) => s.value === sort) ? (sort as Sort) : 'rilevanza',
+    sort: sort && SORTS.includes(sort) ? sort : 'rilevanza',
   };
 }
 

@@ -39,7 +39,11 @@ finale sceglie modello e taglia e invia la richiesta su WhatsApp (o e-mail).
    all'avvio (`start.mjs`), non alla prima visita. L'indice JSON esce già
    compresso (brotli/gzip); Caddy comprime il resto (`caddy.encode`).
 5. Il token di scs-b2b vive solo nel `.env` del server: mai nel browser.
-6. Testi in italiano; codice e commenti in inglese.
+6. **Testi IT/EN** tutti in `src/i18n.ts` (italiano fonte e default, inglese
+   stesse chiavi); la lingua viene dal cookie `lang` (`/lingua/<it|en>`) o dal
+   browser, in `Astro.locals.locale`. Codice e commenti in inglese.
+7. **Tema chiaro/scuro**: token in `global.css` (`:root`, `prefers-color-scheme`,
+   `[data-theme]`); i riquadri prodotto restano chiari anche nel tema scuro.
 
 ## Struttura
 
@@ -47,7 +51,7 @@ finale sceglie modello e taglia e invia la richiesta su WhatsApp (o e-mail).
 - `src/lib/filter.ts` — filtri/ordinamenti/faccette, condivisi server e browser
 - `src/components/` — isole Preact: `Catalog` (griglia + filtri istantanei),
   `ProductBuy` (taglia → prezzo → WhatsApp), `Favorites`, `FavCount`, `Rail`
-- `src/pages/` — `/`, `/p/[sku]`, `/preferiti`, `/api/catalogo.json`
+- `src/pages/` — `/` (copertina, novità, come funziona, catalogo, CTA), `/p/[sku]`, `/preferiti`, `/api/catalogo.json`
   (indice per i filtri istantanei), `/img/…`, `/healthz` (catalogo + coda
   immagini), `/robots.txt`
 - `docs/features.md` — funzionalità proposte al cliente
