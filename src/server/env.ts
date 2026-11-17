@@ -32,6 +32,10 @@ export const env = {
   priceNote: str('PRICE_NOTE', vatBasisPoints > 0 ? 'Prezzi IVA inclusa' : 'Prezzi IVA esclusa'),
   dataDir: path.resolve(str('DATA_DIR', 'data')),
   newDays: Math.max(1, int('NEW_DAYS', 14)),
+  /** Pictures made at once (download + resize): keep it low on a small VPS. */
+  imageConcurrency: Math.max(1, int('IMAGE_CONCURRENCY', 2)),
+  /** A visitor waits at most this long for a picture, then gets the placeholder. */
+  imageWaitMs: Math.max(500, int('IMAGE_WAIT_MS', 2500)),
   /** At or below this many pairs a size is "ultimi pezzi". */
   lowStock: Math.max(0, int('LOW_STOCK_MAX', 2)),
 

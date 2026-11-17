@@ -8,7 +8,15 @@ import { env } from '../../server/env.ts';
 import { euro, when } from '../../lib/format.ts';
 import { CATEGORY_LABEL } from '../../lib/types.ts';
 
-const p = product(decodeURIComponent(Astro.params.sku ?? ''));
+const raw = Astro.params.sku ?? '';
+const decoded = (() => {
+  try {
+    return decodeURIComponent(raw);
+  } catch {
+    return raw;
+  }
+})();
+const p = product(raw) ?? product(decoded);
 if (!p) {
   Astro.response.status = 404;
 }
@@ -37,7 +45,7 @@ const contact = { siteName: env.siteName, whatsapp: env.whatsapp, email: env.ema
         </nav>
         <article class="pdp">
           <div class="pdp-media">
-            <Picture p={p} eager sizes="(max-width: 900px) 100vw, 55vw" />
+            <Picture p={p} eager large sizes="(max-width: 900px) 100vw, 55vw" />
             <Badges p={p} />
           </div>
           <div class="pdp-info">

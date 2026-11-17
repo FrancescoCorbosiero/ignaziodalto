@@ -27,3 +27,5 @@ services:
     labels:
       caddy: ${SITE_DOMAIN:-ignaziodalto.alpacode.it}
       caddy.reverse_proxy: "{{upstreams 4321}}"
+      # compress HTML, JS and CSS on the way out (the catalog JSON comes precompressed)
+      caddy.encode: zstd gzip

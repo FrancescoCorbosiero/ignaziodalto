@@ -17,13 +17,17 @@ interface Props {
   eager?: boolean;
 }
 
-export function Picture({ p, eager, sizes }: { p: Product; eager?: boolean; sizes: string }) {
+/**
+ * Two sizes exist (src/server/images.ts): 480 for cards, prepared in advance
+ * for every product, and 1080 for the product page on large screens.
+ */
+export function Picture({ p, eager, large, sizes }: { p: Product; eager?: boolean; large?: boolean; sizes: string }) {
   if (!p.image) return <ShoeMark />;
   return (
     <img
       src={`${p.image}?w=480`}
-      srcset={`${p.image}?w=320 320w, ${p.image}?w=480 480w, ${p.image}?w=720 720w, ${p.image}?w=1080 1080w`}
-      sizes={sizes}
+      srcset={large ? `${p.image}?w=480 480w, ${p.image}?w=1080 1080w` : undefined}
+      sizes={large ? sizes : undefined}
       alt={p.name}
       width={480}
       height={384}

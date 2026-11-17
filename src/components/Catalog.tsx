@@ -33,9 +33,14 @@ export default function Catalog(props: Props) {
   // the whole catalog, once: from then on every filter is instant
   useEffect(() => {
     document.documentElement.classList.add('has-js');
-    loadIndex()
-      .then((idx) => setAll(idx.products))
-      .catch(() => toast('Connessione assente: i filtri si aggiornano ricaricando la pagina'));
+    // after the first paint and the first pictures: the page comes first
+    const go = () =>
+      loadIndex()
+        .then((idx) => setAll(idx.products))
+        .catch(() => toast('Connessione assente: i filtri si aggiornano ricaricando la pagina'));
+    const idle = (window as { requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => number }).requestIdleCallback;
+    if (idle) idle(go, { timeout: 1500 });
+    else setTimeout(go, 300);
   }, []);
 
   // a returning visitor finds the catalog already in their size

@@ -29,8 +29,17 @@ finale sceglie modello e taglia e invia la richiesta su WhatsApp (o e-mail).
 3. **Il fornitore non si vede**: le immagini passano da `/img/<sku>/<key>`
    (ridimensionate in WebP e messe in cache); gli URL di GoldenSneakers non
    arrivano mai al browser. Il proxy serve solo immagini presenti nel catalogo.
-4. Il token di scs-b2b vive solo nel `.env` del server: mai nel browser.
-5. Testi in italiano; codice e commenti in inglese.
+4. **Le foto non rallentano le pagine** (`src/server/images.ts`): due sole
+   misure (480 card, 1080 scheda); si preparano in un processo a parte a
+   priorità CPU minima (`image-worker.mjs`), al massimo `IMAGE_CONCURRENCY`
+   insieme, prima quelle dei visitatori; dopo ogni aggiornamento del catalogo
+   si preparano in background tutte le 480 nell'ordine del catalogo. Un
+   visitatore non aspetta mai più di `IMAGE_WAIT_MS` (poi la sagoma), le foto
+   che falliscono non si riprovano per 15 minuti. Il catalogo si carica
+   all'avvio (`start.mjs`), non alla prima visita. L'indice JSON esce già
+   compresso (brotli/gzip); Caddy comprime il resto (`caddy.encode`).
+5. Il token di scs-b2b vive solo nel `.env` del server: mai nel browser.
+6. Testi in italiano; codice e commenti in inglese.
 
 ## Struttura
 
@@ -39,7 +48,8 @@ finale sceglie modello e taglia e invia la richiesta su WhatsApp (o e-mail).
 - `src/components/` — isole Preact: `Catalog` (griglia + filtri istantanei),
   `ProductBuy` (taglia → prezzo → WhatsApp), `Favorites`, `FavCount`, `Rail`
 - `src/pages/` — `/`, `/p/[sku]`, `/preferiti`, `/api/catalogo.json`
-  (indice per i filtri istantanei), `/img/…`, `/healthz`, `/robots.txt`
+  (indice per i filtri istantanei), `/img/…`, `/healthz` (catalogo + coda
+  immagini), `/robots.txt`
 - `docs/features.md` — funzionalità proposte al cliente
 
 ## Comandi

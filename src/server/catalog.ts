@@ -2,9 +2,13 @@
 // development), refreshed every CATALOG_REFRESH_SECONDS, cached on disk so
 // a restart or an scs-b2b outage never leaves the site empty.
 import fs from 'node:fs/promises';
+import zlib from 'node:zlib';
+import { promisify } from 'node:util';
 import path from 'node:path';
 import { env } from './env.ts';
 import { assertCatalog, normalize, type ApiCatalog, type Seen } from './normalize.ts';
+import { warm } from './images.ts';
+import { apply as applyFilters, EMPTY } from '../lib/filter.ts';
 import type { CatalogIndex, Product } from '../lib/types.ts';
 
 interface State {
@@ -37,7 +41,15 @@ let raw: ApiCatalog | null = null;
 let etag: string | null = null;
 let seen: Seen | null = null;
 let started: Promise<void> | null = null;
-let indexJson: string | null = null;
+interface IndexBodies {
+  revision: number;
+  raw: Buffer;
+  br: Buffer;
+  gzip: Buffer;
+}
+let index: Promise<IndexBodies> | null = null;
+const brotli = promisify(zlib.brotliCompress);
+const gzip = promisify(zlib.gzip);
 
 const file = (name: string) => path.join(env.dataDir, name);
 
@@ -66,8 +78,18 @@ async function apply(api: ApiCatalog, source: State['source']): Promise<void> {
   state.syncedAt = api.synced_at;
   state.source = source;
   state.revision++;
-  indexJson = null;
+  index = null;
   await writeJson('seen.json', seen).catch(() => undefined);
+  // prepare every card picture in the background: visitors hit the cache
+  // in the order the catalog shows them (sold-out last): the first page first
+  const shown = applyFilters(products, { ...EMPTY, all: true });
+  void warm(
+    shown.flatMap((p) => {
+      const key = p.image?.split('/')[3];
+      const source = key ? images.get(`${p.sku}|${key}`) : undefined;
+      return key && source ? [{ sku: p.sku, key, source }] : [];
+    }),
+  );
 }
 
 async function fetchApi(): Promise<void> {
@@ -144,8 +166,18 @@ export function meta() {
   };
 }
 
-/** The browser's copy for instant filtering, serialized once per revision. */
-export function indexBody(): string {
-  indexJson ??= JSON.stringify({ syncedAt: state.syncedAt, products: state.products } satisfies CatalogIndex);
-  return indexJson;
+/**
+ * The browser's copy for instant filtering: serialized and compressed once
+ * per revision (1.4 MB of JSON for 1500 models -> ~30 KB with brotli).
+ */
+export function indexBodies(): Promise<IndexBodies> {
+  const revision = state.revision;
+  if (!index) {
+    const raw = Buffer.from(JSON.stringify({ syncedAt: state.syncedAt, products: state.products } satisfies CatalogIndex));
+    index = Promise.all([
+      brotli(raw, { params: { [zlib.constants.BROTLI_PARAM_QUALITY]: 9 } }),
+      gzip(raw, { level: 9 }),
+    ]).then(([br, gz]) => ({ revision, raw, br, gzip: gz }));
+  }
+  return index;
 }
