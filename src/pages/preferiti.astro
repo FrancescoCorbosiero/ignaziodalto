@@ -1,0 +1,14 @@
+---
+import Base from '../layouts/Base.astro';
+import Favorites from '../components/Favorites.tsx';
+import { env } from '../server/env.ts';
+
+const contact = { siteName: env.siteName, whatsapp: env.whatsapp, email: env.email };
+---
+
+<Base title="Preferiti">
+  <div class="wrap" style="padding-block:32px 64px;max-width:960px">
+    <h1 class="section-title">I tuoi preferiti</h1>
+    <Favorites client:load contact={contact} origin={env.siteUrl} />
+  </div>
+</Base>

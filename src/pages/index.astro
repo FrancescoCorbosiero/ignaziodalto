@@ -1,0 +1,48 @@
+---
+import Base from '../layouts/Base.astro';
+import Catalog from '../components/Catalog.tsx';
+import { products, meta } from '../server/catalog.ts';
+import { apply, facets, parseFilters } from '../lib/filter.ts';
+import { bySize, when } from '../lib/format.ts';
+
+const PAGE = 24;
+const all = products();
+const filters = parseFilters(Astro.url.searchParams);
+const page = Math.min(50, Math.max(1, Number(Astro.url.searchParams.get('pagina')) || 1));
+const results = apply(all, filters);
+const shown = PAGE * page;
+const allSizes = [...new Set(all.flatMap((p) => p.sizes.filter((s) => s.qty > 0).map((s) => s.eu)))].sort(bySize);
+const available = all.filter((p) => p.qty > 0);
+const brands = new Set(available.map((p) => p.brand)).size;
+const pairs = available.reduce((n, p) => n + p.qty, 0);
+const updated = when(meta().syncedAt);
+
+Astro.response.headers.set('Cache-Control', 'no-cache');
+---
+
+<Base>
+  <div class="wrap">
+    <section class="hero">
+      <h1>
+        <span class="hero-line" style="color:inherit;-webkit-text-stroke:0">Sneakers</span>
+        <span class="hero-line">disponibili</span>
+      </h1>
+      <div class="hero-facts">
+        <strong>{available.length}</strong>
+        <span>modelli di {brands} brand · {pairs.toLocaleString('it-IT')} paia</span>
+        {updated && <span class="live">Disponibilità aggiornata {updated}</span>}
+      </div>
+    </section>
+
+    <Catalog
+      client:load
+      items={results.slice(0, shown)}
+      total={results.length}
+      facets={facets(all, filters)}
+      filters={filters}
+      pageSize={PAGE}
+      shown={shown}
+      allSizes={allSizes}
+    />
+  </div>
+</Base>

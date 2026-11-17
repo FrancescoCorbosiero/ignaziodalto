@@ -1,0 +1,29 @@
+# ignaziodalto.alpacode.it — the sneakers catalog, behind
+# lucaslorentz/caddy-docker-proxy (the same "caddy" network as the other sites).
+#
+# Deploy:  cp .env.example .env (fill it)  &&  docker compose up -d --build
+# DNS:     ignaziodalto.alpacode.it -> this VPS (A/AAAA), before the first start,
+#          so Caddy can get the certificate.
+
+networks:
+  caddy:
+    external: true
+
+volumes:
+  # last good copy of the catalog, first-seen dates ("Novità"), resized images
+  ignaziodalto-data:
+
+services:
+  ignaziodalto:
+    build: .
+    image: ignaziodalto:latest
+    container_name: ignaziodalto
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - ignaziodalto-data:/app/data
+    networks:
+      - caddy
+    labels:
+      caddy: ${SITE_DOMAIN:-ignaziodalto.alpacode.it}
+      caddy.reverse_proxy: "{{upstreams 4321}}"
