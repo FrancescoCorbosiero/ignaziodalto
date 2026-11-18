@@ -23,7 +23,7 @@ test('the markup goes on the taxable amount, then VAT, in integer cents', () => 
   assert.equal(priceCents('100', site), 12627, '(100 + 3.50) x 1.22 = 126.27');
   assert.equal(priceCents('0.10', site), 439, '3.60 x 1.22 = 4.392 -> 4.39');
   assert.equal(priceCents('1.25', { markupCents: 0, vatBasisPoints: 2200 }), 153, '1.525 rounds half up');
-  assert.equal(priceCents('75.00', { markupCents: 350, vatBasisPoints: 0 }), 7850, 'VAT_RATE=0: net + markup');
+  assert.equal(priceCents('75.00', { markupCents: 300, vatBasisPoints: 0 }), 7800, 'VAT_RATE=0: net + markup');
   assert.throws(() => priceCents('abc', site));
   const seen: Seen = { baseline: '', skus: {} };
   const { products } = normalize(api([shoe('A1', 'Nike', [['42', 2, '100.00'], ['43', 0, '90.00'], ['41', 1, '110.00']])]), site, seen, 14);
@@ -31,6 +31,14 @@ test('the markup goes on the taxable amount, then VAT, in integer cents', () => 
   assert.deepEqual(p.sizes.map((s) => [s.eu, s.price]), [['41', 13847], ['42', 12627], ['43', 11407]]);
   assert.equal(p.from, 12627, '"from" ignores sold-out sizes');
   assert.equal(p.qty, 3);
+});
+
+test('a list price that includes VAT is brought back to its taxable amount first', () => {
+  const net = { markupCents: 300, vatBasisPoints: 0, listVatBasisPoints: 2200 };
+  assert.equal(priceCents('91.50', net), 7800, '91.50 / 1.22 = 75.00, + 3.00');
+  assert.equal(priceCents('100.00', net), 8497, '100 / 1.22 = 81.967 -> 81.97, + 3.00');
+  assert.equal(priceCents('91.50', { ...net, vatBasisPoints: 2200 }), 9516, '(75.00 + 3.00) x 1.22');
+  assert.equal(priceCents('91.50', { markupCents: 300, vatBasisPoints: 0, listVatBasisPoints: 0 }), 9450, 'a net list is left as is');
 });
 
 test('supplier image URLs never reach the page', () => {

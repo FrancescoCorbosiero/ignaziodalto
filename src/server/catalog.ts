@@ -6,7 +6,7 @@ import zlib from 'node:zlib';
 import { promisify } from 'node:util';
 import path from 'node:path';
 import { env } from './env.ts';
-import { assertCatalog, normalize, type ApiCatalog, type Seen } from './normalize.ts';
+import { assertCatalog, normalize, type ApiCatalog, type Pricing, type Seen } from './normalize.ts';
 import { warm } from './images.ts';
 import { apply as applyFilters, EMPTY } from '../lib/filter.ts';
 import type { CatalogIndex, Product } from '../lib/types.ts';
@@ -38,6 +38,7 @@ const state: State = {
 };
 
 let raw: ApiCatalog | null = null;
+let pricing: Pricing | null = null;
 let etag: string | null = null;
 let seen: Seen | null = null;
 let started: Promise<void> | null = null;
@@ -68,9 +69,20 @@ async function writeJson(name: string, data: unknown): Promise<void> {
   await fs.rename(tmp, file(name));
 }
 
+/** The site always starts from the taxable amount: VAT inside the list price is stripped first. */
+function pricingFor(api: ApiCatalog): Pricing {
+  const included = env.listIncludesVat === 'auto' ? api.vat_included === true : env.listIncludesVat;
+  pricing = {
+    markupCents: env.markupCents,
+    vatBasisPoints: env.vatBasisPoints,
+    listVatBasisPoints: included ? env.listVatBasisPoints : 0,
+  };
+  return pricing;
+}
+
 async function apply(api: ApiCatalog, source: State['source']): Promise<void> {
   seen ??= (await readJson<Seen>('seen.json')) ?? { baseline: new Date().toISOString(), skus: {} };
-  const { products, images } = normalize(api, { markupCents: env.markupCents, vatBasisPoints: env.vatBasisPoints }, seen, env.newDays);
+  const { products, images } = normalize(api, pricingFor(api), seen, env.newDays);
   raw = api;
   state.products = products;
   state.bySku = new Map(products.map((p) => [p.sku, p]));
@@ -163,6 +175,8 @@ export function meta() {
     source: state.source,
     lastError: state.lastError,
     revision: state.revision,
+    /** How prices are computed now: list VAT stripped, markup, VAT added (basis points / cents). */
+    pricing,
   };
 }
 

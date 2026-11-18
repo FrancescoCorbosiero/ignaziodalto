@@ -2,7 +2,7 @@
 
 Catalogo vetrina pubblico (senza login, senza carrello, senza admin) che
 mostra il listino di **scs-b2b** (`FrancescoCorbosiero/scs-b2b`,
-b2b.shoesclothingstore.com) **maggiorato di 3,50 € a taglia, prezzi imponibili
+b2b.shoesclothingstore.com) **maggiorato di 3,00 € a taglia, prezzi imponibili
 (IVA esclusa)**. Il cliente
 finale sceglie modello e taglia e invia la richiesta su WhatsApp (o e-mail).
 
@@ -20,9 +20,12 @@ finale sceglie modello e taglia e invia la richiesta su WhatsApp (o e-mail).
 
 ## Regole
 
-1. **Prezzi**: `(netto scs-b2b + PRICE_MARKUP_EUR) × (1 + VAT_RATE)`: il
+1. **Prezzi**: `(imponibile scs-b2b + PRICE_MARKUP_EUR) × (1 + VAT_RATE)`: se
+   il listino include l'IVA (`vat_included` dell'API, o
+   `LIST_PRICES_INCLUDE_VAT`) la si scorpora prima (`LIST_VAT_RATE`); il
    margine va sull'imponibile, l'IVA per ultima, arrotondata al centesimo, in
-   centesimi interi (`priceCents` in `src/server/normalize.ts`, testata).
+   centesimi interi (`priceCents` in `src/server/normalize.ts`, testata;
+   `/healthz` mostra le regole in uso).
    Scelta del titolare: solo prezzi imponibili (`VAT_RATE=0`, default), con
    «Prezzi IVA esclusa» in scheda e nel piè di pagina e «+ IVA» accanto ai
    prezzi delle card (`vatTagFor`). `VAT_RATE=22` li riporta IVA inclusa.

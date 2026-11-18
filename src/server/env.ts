@@ -18,7 +18,10 @@ export function parseEuroCents(v: string): number {
   return Math.round(n * 100);
 }
 
-const vatBasisPoints = Math.round(Math.min(100, Math.max(0, Number(str('VAT_RATE', '0').replace(',', '.')) || 0)) * 100);
+/** "22" -> 2200 basis points, clamped to 0..100%. */
+const rate = (k: string, d: string): number => Math.round(Math.min(100, Math.max(0, Number(str(k, d).replace(',', '.')) || 0)) * 100);
+const vatBasisPoints = rate('VAT_RATE', '0');
+const listVat = str('LIST_PRICES_INCLUDE_VAT', 'auto').toLowerCase();
 
 export const env = {
   /** scs-b2b catalog API (docs/10 of scs-b2b). Empty = use the fixture. */
@@ -26,10 +29,14 @@ export const env = {
   apiToken: str('CATALOG_API_TOKEN'),
   fixture: path.resolve(str('CATALOG_FIXTURE', 'fixtures/catalog.json')),
   refreshSeconds: Math.max(60, int('CATALOG_REFRESH_SECONDS', 300)),
-  /** Added to every size's scs-b2b list price. */
-  markupCents: parseEuroCents(str('PRICE_MARKUP_EUR', '3.50')),
+  /** Added to the taxable amount of every size's scs-b2b list price. */
+  markupCents: parseEuroCents(str('PRICE_MARKUP_EUR', '3.00')),
   /** VAT added after the markup, in basis points: "22" -> 2200. 0 = net prices. */
   vatBasisPoints: vatBasisPoints,
+  /** Does scs-b2b's list price include VAT? "auto" = trust the API's `vat_included`. */
+  listIncludesVat: (listVat === 'true' || listVat === 'yes' || listVat === '1' ? true : listVat === 'false' || listVat === 'no' || listVat === '0' ? false : 'auto') as boolean | 'auto',
+  /** The VAT rate inside scs-b2b's list price when it includes VAT, basis points. */
+  listVatBasisPoints: rate('LIST_VAT_RATE', '22'),
   /** Fixed note next to prices (any language); empty = the dictionary's, per language. */
   priceNote: str('PRICE_NOTE'),
   dataDir: path.resolve(str('DATA_DIR', 'data')),

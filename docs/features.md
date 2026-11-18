@@ -63,7 +63,7 @@ Effort: S = mezza giornata, M = 1–2 giorni, L = 3+ giorni.
 
 **Per il titolare**
 - **Markup differenziato** (per brand o fascia di prezzo), oggi fisso a
-  3,50 €: una regola in configurazione, senza admin (S).
+  3,00 €: una regola in configurazione, senza admin (S).
 - **Brand o modelli nascosti**: un elenco di esclusioni (S).
 - **QR code per prodotto**, da stampare per esposizione o eventi (S).
 - **Fonte della richiesta nel messaggio WhatsApp** (Instagram, campagna,
@@ -74,7 +74,7 @@ Effort: S = mezza giornata, M = 1–2 giorni, L = 3+ giorni.
 ## Da decidere con il cliente
 
 - **IVA**: deciso. Si mostrano solo prezzi imponibili, margine incluso
-  (`netto + 3,50`), con la dicitura «IVA esclusa» / «+ IVA» accanto. Con
+  (`imponibile + 3,00`, IVA del listino scorporata se c'è), con la dicitura «IVA esclusa» / «+ IVA» accanto. Con
   `VAT_RATE=22` si torna ai prezzi IVA inclusa.
 - **Contatti**: numero WhatsApp, e-mail e Instagram ancora da avere.
 - **Logo / identità**: oggi il nome è scritto con il carattere del sito.

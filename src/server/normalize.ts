@@ -45,24 +45,32 @@ export function assertCatalog(data: unknown): ApiCatalog {
   return c;
 }
 
-/** How this site prices a size: markup on the taxable amount, then VAT. */
+/** How this site prices a size: taxable amount + markup, then VAT. */
 export interface Pricing {
-  /** Added to scs-b2b's net list price (the taxable amount), cents. */
+  /** Added to the taxable amount of scs-b2b's list price, cents. */
   markupCents: number;
   /** VAT on top, in basis points (2200 = 22%); 0 = prices shown net. */
   vatBasisPoints: number;
+  /** VAT already inside scs-b2b's list price, stripped first; 0 = the list is net. */
+  listVatBasisPoints?: number;
 }
 
+/** a x num / den, rounded to the cent (half up), integers only. */
+const scale = (cents: number, num: number, den: number): number => Math.floor((cents * num * 2 + den) / (den * 2));
+
 /**
- * ("75.00", +350, 22%) -> (7500 + 350) x 1.22 = 9577 cents.
- * The markup goes on the taxable amount; VAT is applied last, rounded to
- * the cent (half up). Integer cents, never float sums.
+ * ("75.00", +300, 22%) -> (7500 + 300) x 1.22 = 9516 cents.
+ * A list price that includes VAT is brought back to its taxable amount
+ * first ("91.50" incl. 22% -> 75.00). The markup goes on the taxable
+ * amount; VAT is applied last, rounded to the cent (half up). Integer
+ * cents, never float sums.
  */
-export function priceCents(listPrice: string, { markupCents, vatBasisPoints }: Pricing): number {
+export function priceCents(listPrice: string, { markupCents, vatBasisPoints, listVatBasisPoints = 0 }: Pricing): number {
   const m = String(listPrice).trim().match(/^(\d+)(?:\.(\d{1,2}))?$/);
   if (!m) throw new Error(`Prezzo non valido: "${listPrice}"`);
-  const taxable = Number(m[1]) * 100 + Number((m[2] ?? '0').padEnd(2, '0')) + markupCents;
-  return Math.floor((taxable * (10_000 + vatBasisPoints) + 5_000) / 10_000);
+  const list = Number(m[1]) * 100 + Number((m[2] ?? '0').padEnd(2, '0'));
+  const taxable = scale(list, 10_000, 10_000 + listVatBasisPoints) + markupCents;
+  return scale(taxable, 10_000 + vatBasisPoints, 10_000);
 }
 
 /** Stable key of the supplier image: changes when the feed changes the picture. */
