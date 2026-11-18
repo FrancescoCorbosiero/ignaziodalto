@@ -106,15 +106,25 @@ const here = Astro.url.pathname + Astro.url.search;
           {env.instagram && <li><a href={`https://instagram.com/${env.instagram}`} target="_blank" rel="noopener">@{env.instagram}</a></li>}
         </ul>
         <p class="footer-note">{priceNoteFor(locale)}. {t.footerNote}</p>
+        <div class="footer-credit">
+          <alpacode-badge lang={locale} theme="auto">
+            <a href={locale === 'en' ? 'https://alpacode.it/en/' : 'https://alpacode.it/'}>{locale === 'en' ? 'Made by Alpacode' : 'Realizzato da Alpacode'}</a>
+          </alpacode-badge>
+        </div>
       </div>
     </footer>
+    <script is:inline src="https://alpacode.it/badge.js" defer></script>
     <script>
       // light/dark: flips the current look and remembers it
       const root = document.documentElement;
+      // the credit badge follows the site's theme, not only the system's
+      const syncBadge = () => document.querySelector('alpacode-badge')?.setAttribute('theme', root.dataset.theme || 'auto');
+      syncBadge();
       document.querySelector('.theme-toggle')?.addEventListener('click', () => {
         const dark = root.dataset.theme ? root.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
         const next = dark ? 'light' : 'dark';
         root.dataset.theme = next;
+        syncBadge();
         try {
           localStorage.setItem('id:theme', next);
         } catch {
