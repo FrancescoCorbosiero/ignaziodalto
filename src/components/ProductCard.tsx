@@ -17,6 +17,8 @@ interface Props {
   /** First cards of the page: load their pictures at once. */
   eager?: boolean;
   locale: Locale;
+  /** Short tag after the price ("+ IVA"); empty when prices include VAT. */
+  vat?: string;
 }
 
 /**
@@ -53,7 +55,7 @@ export function Badges({ p, locale }: { p: Product; locale: Locale }) {
   );
 }
 
-export function ProductCard({ p, price, hits = [], fav = false, onFav, eager, locale }: Props) {
+export function ProductCard({ p, price, hits = [], fav = false, onFav, eager, locale, vat }: Props) {
   const t = dict(locale);
   const inStock = p.sizes.filter((s) => s.qty > 0);
   const exact = hits.length > 0 && inStock.some((s) => hits.includes(s.eu));
@@ -81,6 +83,7 @@ export function ProductCard({ p, price, hits = [], fav = false, onFav, eager, lo
           <span class="price">
             {!exact && inStock.length > 1 && <small>{t.from}</small>}
             {euro(price, locale)}
+            {vat && <small class="vat">{vat}</small>}
           </span>
           <span class="card-sizes">
             {t.sizesCount(inStock.length)}

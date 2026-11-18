@@ -4,7 +4,7 @@ import ProductBuy from '../../components/ProductBuy.tsx';
 import Rail from '../../components/Rail.tsx';
 import { Badges, Picture } from '../../components/ProductCard.tsx';
 import { product, products, meta } from '../../server/catalog.ts';
-import { env, priceNoteFor } from '../../server/env.ts';
+import { env, priceNoteFor, vatTagFor } from '../../server/env.ts';
 import { t as dict } from '../../i18n.ts';
 import { euro, when } from '../../lib/format.ts';
 
@@ -84,7 +84,7 @@ const contact = { siteName: env.siteName, whatsapp: env.whatsapp, email: env.ema
         related.length + fallback.length > 0 && (
           <section class="wrap rail">
             <h2 class="section-title">{related.length > 0 ? t.moreFrom(p.brand) : t.youMayLike}</h2>
-            <Rail client:visible items={[...related, ...fallback]} locale={locale} scroll />
+            <Rail client:visible items={[...related, ...fallback]} locale={locale} vat={vatTagFor(locale)} scroll />
           </section>
         )
       }

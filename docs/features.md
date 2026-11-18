@@ -73,8 +73,8 @@ Effort: S = mezza giornata, M = 1–2 giorni, L = 3+ giorni.
 
 ## Da decidere con il cliente
 
-- **IVA**: deciso. Il margine va sull'imponibile e i prezzi si mostrano IVA
-  22% inclusa: `(netto + 3,50) × 1,22`. Resta da valutare l'**arrotondamento
-  commerciale** (es. 95,77 → 95,90 o 96,00): oggi si arrotonda al centesimo.
+- **IVA**: deciso. Si mostrano solo prezzi imponibili, margine incluso
+  (`netto + 3,50`), con la dicitura «IVA esclusa» / «+ IVA» accanto. Con
+  `VAT_RATE=22` si torna ai prezzi IVA inclusa.
 - **Contatti**: numero WhatsApp, e-mail e Instagram ancora da avere.
 - **Logo / identità**: oggi il nome è scritto con il carattere del sito.

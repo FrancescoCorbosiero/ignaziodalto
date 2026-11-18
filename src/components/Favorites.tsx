@@ -8,7 +8,7 @@ import { loadIndex, useFavs } from '../lib/client/store.ts';
 import { Badges, Picture } from './ProductCard.tsx';
 import { Icon } from './Icon.tsx';
 
-export default function Favorites({ contact, origin, locale }: { contact: ContactConfig; origin: string; locale: Locale }) {
+export default function Favorites({ contact, origin, locale, vat }: { contact: ContactConfig; origin: string; locale: Locale; vat?: string }) {
   const t = dict(locale);
   const { favs, loaded, setSize, remove, clear } = useFavs();
   const [bySku, setBySku] = useState<Map<string, Product> | null>(null);
@@ -77,7 +77,10 @@ export default function Favorites({ contact, origin, locale }: { contact: Contac
                 )}
               </div>
               <div>
-                <span class="price">{euro(size && size.qty > 0 ? size.price : p.from, locale)}</span>
+                <span class="price">
+                  {euro(size && size.qty > 0 ? size.price : p.from, locale)}
+                  {vat && <small class="vat">{vat}</small>}
+                </span>
                 <button type="button" class="link-btn" onClick={() => remove(p.sku)}>
                   {t.remove}
                 </button>
@@ -94,6 +97,7 @@ export default function Favorites({ contact, origin, locale }: { contact: Contac
               <>
                 {' · '}
                 <strong>{euro(total, locale)}</strong>
+                {vat && ` ${vat}`}
                 {t.favTotal(priced.length)}
               </>
             )}

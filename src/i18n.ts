@@ -24,6 +24,7 @@ const it = {
   greeting: (site: string) => `Ciao! Ti scrivo dal catalogo ${site}.`,
   tagline: 'Sneakers originali, disponibilità aggiornata',
   priceNote: (vatIncluded: boolean): string => (vatIncluded ? 'Prezzi IVA inclusa' : 'Prezzi IVA esclusa'),
+  vatTag: '+ IVA',
   footerNote: 'Disponibilità e prezzi possono cambiare: la conferma arriva quando ci scrivi.',
 
   // home cover and sections
@@ -179,6 +180,7 @@ const en: Dict = {
   greeting: (site) => `Hi! I'm writing from the ${site} catalogue.`,
   tagline: 'Authentic sneakers, live availability',
   priceNote: (vatIncluded) => (vatIncluded ? 'Prices include VAT' : 'Prices exclude VAT'),
+  vatTag: '+ VAT',
   footerNote: 'Availability and prices may change: you get the confirmation when you message us.',
 
   coverKicker: 'Sneakers catalogue',

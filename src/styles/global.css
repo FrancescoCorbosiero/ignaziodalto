@@ -1091,6 +1091,10 @@ button {
   margin-right: 3px;
 }
 
+.price small.vat {
+  margin: 0 0 0 4px;
+}
+
 .card-sizes {
   font-size: 13px;
   color: var(--muted);

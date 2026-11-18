@@ -9,7 +9,7 @@ import { Icon } from './Icon.tsx';
  * A row of cards with a working heart. `scroll`: one line that slides
  * sideways (snap, arrows on large screens); otherwise a grid.
  */
-export default function Rail({ items, locale, scroll = false }: { items: Product[]; locale: Locale; scroll?: boolean }) {
+export default function Rail({ items, locale, vat, scroll = false }: { items: Product[]; locale: Locale; vat?: string; scroll?: boolean }) {
   const t = dict(locale);
   const { has, toggle } = useFavs();
   const track = useRef<HTMLDivElement>(null);
@@ -23,6 +23,7 @@ export default function Rail({ items, locale, scroll = false }: { items: Product
       p={p}
       price={p.from}
       locale={locale}
+      vat={vat}
       fav={has(p.sku)}
       onFav={() => {
         toast(has(p.sku) ? t.favRemoved : t.favAdded);

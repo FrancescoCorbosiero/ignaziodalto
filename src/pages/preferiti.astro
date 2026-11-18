@@ -1,7 +1,7 @@
 ---
 import Base from '../layouts/Base.astro';
 import Favorites from '../components/Favorites.tsx';
-import { env } from '../server/env.ts';
+import { env, vatTagFor } from '../server/env.ts';
 import { t as dict } from '../i18n.ts';
 
 const locale = Astro.locals.locale;
@@ -12,6 +12,6 @@ const contact = { siteName: env.siteName, whatsapp: env.whatsapp, email: env.ema
 <Base title={t.favorites}>
   <div class="wrap" style="padding-block:32px 64px;max-width:960px">
     <h1 class="section-title">{t.favTitle}</h1>
-    <Favorites client:load contact={contact} origin={env.siteUrl} locale={locale} />
+    <Favorites client:load contact={contact} origin={env.siteUrl} locale={locale} vat={vatTagFor(locale)} />
   </div>
 </Base>

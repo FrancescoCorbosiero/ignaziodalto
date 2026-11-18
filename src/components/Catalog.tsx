@@ -19,6 +19,8 @@ interface Props {
   /** Every EU size of the catalog: the "your size" picker. */
   allSizes: string[];
   locale: Locale;
+  /** Short tag after card prices ("+ IVA"); empty when prices include VAT. */
+  vat?: string;
 }
 
 export default function Catalog(props: Props) {
@@ -317,6 +319,7 @@ export default function Catalog(props: Props) {
                   hits={filters.sizes}
                   eager={i < 4}
                   locale={props.locale}
+                  vat={props.vat}
                   fav={has(p.sku)}
                   onFav={() => {
                     const adding = !has(p.sku);

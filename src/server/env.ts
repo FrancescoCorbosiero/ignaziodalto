@@ -18,7 +18,7 @@ export function parseEuroCents(v: string): number {
   return Math.round(n * 100);
 }
 
-const vatBasisPoints = Math.round(Math.min(100, Math.max(0, Number(str('VAT_RATE', '22').replace(',', '.')) || 0)) * 100);
+const vatBasisPoints = Math.round(Math.min(100, Math.max(0, Number(str('VAT_RATE', '0').replace(',', '.')) || 0)) * 100);
 
 export const env = {
   /** scs-b2b catalog API (docs/10 of scs-b2b). Empty = use the fixture. */
@@ -50,6 +50,11 @@ export const env = {
   email: str('CONTACT_EMAIL'),
   instagram: str('CONTACT_INSTAGRAM').replace(/^@/, ''),
 };
+
+/** The short tag next to every card price ("+ IVA"), empty when prices include VAT. */
+export function vatTagFor(locale: Locale): string {
+  return env.vatBasisPoints > 0 ? '' : t(locale).vatTag;
+}
 
 export function priceNoteFor(locale: Locale): string {
   return env.priceNote || t(locale).priceNote(env.vatBasisPoints > 0);
